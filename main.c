@@ -14,19 +14,22 @@ Short Description of contents:
 #include <pthread.h>
 #include <stdbool.h>
 
+char * delayArg;
+int totVocalists;
+int totComposers;
+int totRooms;
+int maxWanderTime = -1;
+int maxSoundRoomUsageTime = -1;
+int randomWanderTime = -1;
+
 void thread_task(int i) {
-    printf("Task Created\n");
+    randomWanderTime = (rand() % (maxWanderTime + 1));
+    printf("Task Created with random wander time of %d\n", randomWanderTime);
     pthread_exit(0); // this code returns to the corresponding pthread_join issued in main()
 } 
 
 int main(int argc, char* argv[]) {
     pthread_t thread_id[5];
-    char * delayArg;
-    int totVocalists;
-    int totComposers;
-    int totRooms;
-    int maxWanderTime = -1;
-    int maxSoundRoomUsageTime = -1;
 
     if (argc < 2) {
         printf("Necessary arguments are missing, exiting...\n");
