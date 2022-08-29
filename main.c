@@ -53,8 +53,7 @@ void composer_thread_handler(int id) {
     pthread_exit(0); // this code returns to the corresponding pthread_join issued in main()
 } 
 
-int main(int argc, char* argv[]) {
-
+void checkArgs(int argc, char* argv[]) {
     if (argc < 2) {
         printf("Necessary arguments are missing, exiting...\n");
         exit(0);
@@ -79,6 +78,11 @@ int main(int argc, char* argv[]) {
         printf("No delay has been specified, exiting...\n");
         exit(0);
     }
+}
+
+int main(int argc, char* argv[]) {
+
+    checkArgs(argc, argv); //check arguments and set appropriate variables
 
     pthread_t vocalist_threads[totVocalists];
     pthread_t composer_threads[totComposers];
