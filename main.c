@@ -22,14 +22,38 @@ int maxWanderTime = -1;
 int maxSoundRoomUsageTime = -1;
 int randomWanderTime = -1;
 
-void thread_task(int i) {
+sem_t mutex;
+//sem_init(&mutex, 0, 1); // will initialize the value of the mutex to 1. You can initialize the mutex to any value of your choice.
+//sem_wait(&mutex); // If the mutex value is 1 or more the thread does not block, 
+//and it reduces the mutex value by 1; If the mutex value is 0 or below the thread executing this code will
+//block until another thread wakes it up executing sem_post
+//sem_post(&mutex) // Increase the mutex value by 1 and unblock a thread that is blocked at sem_wait. 
+
+void vocalist_thread_handler(int id) {
+    printf("Vocalist %d is Wandering...\n", id);
+    sem_wait(&mutex); 
+
     randomWanderTime = (rand() % (maxWanderTime + 1));
     printf("Task Created with random wander time of %d\n", randomWanderTime);
+    int value;
+    sem_getvalue(&mutex, &value);
+    printf("Mutex value is %d\n", value);
+    pthread_exit(0); // this code returns to the corresponding pthread_join issued in main()
+} 
+
+void composer_thread_handler(int id) {
+    printf("Composer %d is Wandering...\n", id);
+    sem_wait(&mutex); 
+
+    randomWanderTime = (rand() % (maxWanderTime + 1));
+    printf("Task Created with random wander time of %d\n", randomWanderTime);
+    int value;
+    sem_getvalue(&mutex, &value);
+    printf("Mutex value is %d\n", value);
     pthread_exit(0); // this code returns to the corresponding pthread_join issued in main()
 } 
 
 int main(int argc, char* argv[]) {
-    pthread_t thread_id[5];
 
     if (argc < 2) {
         printf("Necessary arguments are missing, exiting...\n");
@@ -56,6 +80,12 @@ int main(int argc, char* argv[]) {
         exit(0);
     }
 
+    pthread_t vocalist_threads[totVocalists];
+    pthread_t composer_threads[totComposers];
+    pthread_t room_threads[totRooms];
+
+    sem_init(&mutex, 0, 1);
+
     printf("Delay argument is %s\n", delayArg);
     printf("Total number of vocalists is %d\n", totVocalists);
     printf("Total number of composers is %d\n", totComposers);
@@ -63,12 +93,15 @@ int main(int argc, char* argv[]) {
     printf("Max wander time is %d\n", maxWanderTime);
     printf("Max sound room usage time is %d\n", maxSoundRoomUsageTime);
 
-    // The following code creates 5 threads.
-    for (int i =0; i < 5; i++)
-        pthread_create(&thread_id [i], NULL, thread_task, (void *) i);
+    // The following code creates vocalists threads.
+    for (int i =0; i < totVocalists; i++)
+        pthread_create(&vocalist_threads [i], NULL, vocalist_thread_handler, (void *) i);
+    // The following code creates composer threads.
+    for (int i =0; i < totComposers; i++)
+        pthread_create(&composer_threads [i], NULL, composer_thread_handler, (void *) i);
     // The following code makes sure the main program waits until all threads have finished execution
-    for (int i =0; i < 5; i++)
-        pthread_join(thread_id[i], NULL);
+    for (int i =0; i < totVocalists; i++)
+        pthread_join(vocalist_threads[i], NULL);
 
 }
 
