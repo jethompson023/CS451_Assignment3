@@ -10,4 +10,4 @@ To Run With No Delay
 
 To Run With Random Delay
 -------------------------
-./main -nodelay <# of vocalists> <# of composers> <# of sound proof rooms> <max wander time> <max sound room usage time>
+./main -randomdelay <# of vocalists> <# of composers> <# of sound proof rooms> <max wander time> <max sound room usage time>
