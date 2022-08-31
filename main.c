@@ -13,8 +13,11 @@ Short Description of contents:
 #include <semaphore.h>
 #include <pthread.h>
 #include <stdbool.h>
+#include <time.h>
+
 
 char * delayArg;
+bool isRandDelay = false;
 int totVocalists;
 int totComposers;
 int totRooms;
@@ -23,34 +26,54 @@ int maxSoundRoomUsageTime = -1;
 int randomWanderTime = -1;
 
 sem_t mutex;
-//sem_init(&mutex, 0, 1); // will initialize the value of the mutex to 1. You can initialize the mutex to any value of your choice.
-//sem_wait(&mutex); // If the mutex value is 1 or more the thread does not block, 
-//and it reduces the mutex value by 1; If the mutex value is 0 or below the thread executing this code will
-//block until another thread wakes it up executing sem_post
-//sem_post(&mutex) // Increase the mutex value by 1 and unblock a thread that is blocked at sem_wait. 
+sem_t vocalists;
+sem_t composers;
+int waiting = 0;
+int waitingComposers = 0;
+int currentVocalist;
 
 void vocalist_thread_handler(int id) {
-    printf("Vocalist %d is Wandering...\n", id);
-    sem_wait(&mutex); 
-
-    randomWanderTime = (rand() % (maxWanderTime + 1));
-    printf("Task Created with random wander time of %d\n", randomWanderTime);
-    int value;
-    sem_getvalue(&mutex, &value);
-    printf("Mutex value is %d\n", value);
-    pthread_exit(0); // this code returns to the corresponding pthread_join issued in main()
+    printf("Vocalist %d: I am Wandering...\n", id);
+    if (isRandDelay) {
+        randomWanderTime = (rand() % (maxWanderTime + 1));
+        sleep(randomWanderTime);
+    }
+    printf("Vocalist %d: I am ready to make music...\n", id);
+    if (isRandDelay) {
+        randomWanderTime = (rand() % (maxSoundRoomUsageTime + 1));
+        sleep(randomWanderTime);
+    }
+    sem_wait(&composers);
+    sem_wait(&mutex);
+    waiting = waiting - 1;
+    currentVocalist = id;
+    sem_post(&vocalists);
+    sem_post(&mutex);
+    printf("Vocalist %d: I am leaving.. Bye\n", id);
 } 
 
 void composer_thread_handler(int id) {
-    printf("Composer %d is Wandering...\n", id);
-    sem_wait(&mutex); 
-
-    randomWanderTime = (rand() % (maxWanderTime + 1));
-    printf("Task Created with random wander time of %d\n", randomWanderTime);
-    int value;
-    sem_getvalue(&mutex, &value);
-    printf("Mutex value is %d\n", value);
-    pthread_exit(0); // this code returns to the corresponding pthread_join issued in main()
+    printf("Composer %d: I am Wandering...\n", id);
+    if (isRandDelay) {
+        randomWanderTime = (rand() % (maxWanderTime + 1));
+        sleep(randomWanderTime);
+    }
+    printf("Composer %d: I am ready to make music...\n", id);
+    sem_wait(&mutex);
+    if (waiting < totRooms) {
+        waiting = waiting + 1;
+        sem_post(&composers);
+        printf("Composer %d found Vocalist %d\n", id, currentVocalist);
+        if (isRandDelay) {
+            randomWanderTime = (rand() % (maxSoundRoomUsageTime + 1));
+            sleep(randomWanderTime);
+        }
+        sem_post(&mutex);
+        sem_wait(&vocalists);
+    }
+    sem_post(&mutex);
+    printf("Composer %d: I am leaving.. Bye\n", id);
+    //randomWanderTime = (rand() % (maxWanderTime + 1));
 } 
 
 void checkArgs(int argc, char* argv[]) {
@@ -73,6 +96,7 @@ void checkArgs(int argc, char* argv[]) {
         totRooms = atoi(argv[4]);
         maxWanderTime = atoi(argv[5]);
         maxSoundRoomUsageTime = atoi(argv[6]);
+        isRandDelay = true;
     }
     else {
         printf("No delay has been specified, exiting...\n");
@@ -89,23 +113,17 @@ int main(int argc, char* argv[]) {
     pthread_t room_threads[totRooms];
 
     sem_init(&mutex, 0, 1);
-
-    printf("Delay argument is %s\n", delayArg);
-    printf("Total number of vocalists is %d\n", totVocalists);
-    printf("Total number of composers is %d\n", totComposers);
-    printf("Total number of rooms is %d\n", totRooms);
-    printf("Max wander time is %d\n", maxWanderTime);
-    printf("Max sound room usage time is %d\n", maxSoundRoomUsageTime);
+    sem_init(&vocalists, 0, 0);
+    sem_init(&composers, 0, 0);
 
     // The following code creates vocalists threads.
     for (int i =0; i < totVocalists; i++)
-        pthread_create(&vocalist_threads [i], NULL, vocalist_thread_handler, (void *) i);
+        pthread_create(&vocalist_threads [i], NULL, vocalist_thread_handler, i);
     // The following code creates composer threads.
     for (int i =0; i < totComposers; i++)
-        pthread_create(&composer_threads [i], NULL, composer_thread_handler, (void *) i);
+        pthread_create(&composer_threads [i], NULL, composer_thread_handler, i);
     // The following code makes sure the main program waits until all threads have finished execution
     for (int i =0; i < totVocalists; i++)
         pthread_join(vocalist_threads[i], NULL);
-
 }
 
