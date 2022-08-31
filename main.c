@@ -23,7 +23,6 @@ int totComposers;
 int totRooms;
 int maxWanderTime = -1;
 int maxSoundRoomUsageTime = -1;
-int randomWanderTime = -1;
 
 sem_t mutex;
 sem_t vocalists;
@@ -35,13 +34,17 @@ int currentVocalist;
 void vocalist_thread_handler(int id) {
     printf("Vocalist %d: I am Wandering...\n", id);
     if (isRandDelay) {
-        randomWanderTime = (rand() % (maxWanderTime + 1));
+        int randomWanderTime = (rand() % (maxWanderTime + 1));
         sleep(randomWanderTime);
     }
     printf("Vocalist %d: I am ready to make music...\n", id);
+
+
+
+    //definitely needs changing
     if (isRandDelay) {
-        randomWanderTime = (rand() % (maxSoundRoomUsageTime + 1));
-        sleep(randomWanderTime);
+        int randomUsageTime = (rand() % (maxSoundRoomUsageTime + 1));
+        sleep(randomUsageTime);
     }
     sem_wait(&composers);
     sem_wait(&mutex);
@@ -49,31 +52,45 @@ void vocalist_thread_handler(int id) {
     currentVocalist = id;
     sem_post(&vocalists);
     sem_post(&mutex);
+
+
+
+
     printf("Vocalist %d: I am leaving.. Bye\n", id);
 } 
 
 void composer_thread_handler(int id) {
     printf("Composer %d: I am Wandering...\n", id);
     if (isRandDelay) {
-        randomWanderTime = (rand() % (maxWanderTime + 1));
+        int randomWanderTime = (rand() % (maxWanderTime + 1));
         sleep(randomWanderTime);
     }
     printf("Composer %d: I am ready to make music...\n", id);
+
+
+
+
+    //definitely needs changing
     sem_wait(&mutex);
     if (waiting < totRooms) {
         waiting = waiting + 1;
         sem_post(&composers);
         printf("Composer %d found Vocalist %d\n", id, currentVocalist);
         if (isRandDelay) {
-            randomWanderTime = (rand() % (maxSoundRoomUsageTime + 1));
-            sleep(randomWanderTime);
+            int randomUsageTime = (rand() % (maxSoundRoomUsageTime + 1));
+            sleep(randomUsageTime);
         }
         sem_post(&mutex);
         sem_wait(&vocalists);
     }
     sem_post(&mutex);
+
+
+
+
+
+
     printf("Composer %d: I am leaving.. Bye\n", id);
-    //randomWanderTime = (rand() % (maxWanderTime + 1));
 } 
 
 void checkArgs(int argc, char* argv[]) {
