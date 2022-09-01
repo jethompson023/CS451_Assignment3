@@ -25,7 +25,7 @@ int maxWanderTime = -1;
 int maxSoundRoomUsageTime = -1;
 
 sem_t mutex;
-sem_t Cmutex;
+sem_t rooms;
 sem_t vocalists;
 sem_t composers;
 int waiting = 0;
@@ -48,7 +48,6 @@ void vocalist_thread_handler(int id) {
         sem_wait(&composers); //wait until a composer is found
     
         currentVocalist = id;
-        printf("Vocalist id is %d\n", id);
 
         sem_post(&vocalists); //composers and vocalists can begin playing once current vocalist is updated
         sem_wait(&composers); //wait until composers and vocalists are done playing
@@ -71,14 +70,13 @@ void composer_thread_handler(int id) {
 
     while (true) {
 
-        sem_wait(&mutex); //one composer at a time
         sem_post(&composers); //tell vocalists a composer is found
         sem_wait(&vocalists); //wait until a vocalist is found
-  
+        sem_wait(&rooms);
+        printf("Value of semaphore is %d\n", test);
+        sem_wait(&mutex); //one at time in the room
         currentComposer = id;
-        if (currentVocalist != -1 && totRooms > 0) {
-            totRooms--;
-            printf("Total rooms is %d\n", totRooms);
+        if (currentVocalist != -1) {
             printf("Composer %d and Vocalist %d found a sound proof room and are making music\n", id, currentVocalist);
             if (isRandDelay) {
                 int randomUsageTime = (rand() % (maxSoundRoomUsageTime + 1));
@@ -87,12 +85,14 @@ void composer_thread_handler(int id) {
             //Remainder section
             printf("Composer %d: I am leaving.. Bye\n", id);
             sem_post(&composers); //vocalists can now leave once composer has
-            totRooms++;
-            sem_post(&mutex); //one composer at a time
+            sem_post(&rooms); //one composer at a time
+            sem_post(&mutex);
             pthread_exit(0);
         }
         else {
-            sem_post(&mutex); //one composer at a time
+            sem_post(&rooms); //one composer at a time
+            sem_post(&mutex);
+
         }
     }
 } 
@@ -134,7 +134,7 @@ int main(int argc, char* argv[]) {
     pthread_t room_threads[totRooms];
 
     sem_init(&mutex, 0, 1);
-    sem_init(&Cmutex, 0, 1);
+    sem_init(&rooms, 0, totRooms);
     sem_init(&vocalists, 0, 0);
     sem_init(&composers, 0, 0);
 
