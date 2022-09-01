@@ -71,7 +71,6 @@ void composer_thread_handler(int id) {
         sem_post(&composers); //tell vocalists a composer is found
         sem_wait(&vocalists); //wait until a vocalist is found
         sem_wait(&rooms); //wait for open rooms
-        printf("Value of semaphore is %d\n", test);
         sem_wait(&mutex); //one at time in the room
         currentComposer = id;
         if (currentVocalist != -1) {
