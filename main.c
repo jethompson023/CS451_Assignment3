@@ -44,17 +44,15 @@ void vocalist_thread_handler(int id) {
     
 
     while (true) {
-        //sem_wait(&mutex); //one vocalist at a time
         sem_wait(&composers); //wait until a composer is found
     
-        currentVocalist = id;
+        currentVocalist = id; //set current vocalist
 
         sem_post(&vocalists); //composers and vocalists can begin playing once current vocalist is updated
         sem_wait(&composers); //wait until composers and vocalists are done playing
         
         //Remainder section
         printf("Vocalist %d: I am leaving.. Bye\n", id);
-        //sem_post(&mutex);
         pthread_exit(0);
 
     }
@@ -72,7 +70,7 @@ void composer_thread_handler(int id) {
 
         sem_post(&composers); //tell vocalists a composer is found
         sem_wait(&vocalists); //wait until a vocalist is found
-        sem_wait(&rooms);
+        sem_wait(&rooms); //wait for open rooms
         printf("Value of semaphore is %d\n", test);
         sem_wait(&mutex); //one at time in the room
         currentComposer = id;
@@ -85,13 +83,13 @@ void composer_thread_handler(int id) {
             //Remainder section
             printf("Composer %d: I am leaving.. Bye\n", id);
             sem_post(&composers); //vocalists can now leave once composer has
-            sem_post(&rooms); //one composer at a time
-            sem_post(&mutex);
+            sem_post(&rooms); //open room back up
+            sem_post(&mutex); //composer has left
             pthread_exit(0);
         }
         else {
-            sem_post(&rooms); //one composer at a time
-            sem_post(&mutex);
+            sem_post(&rooms); //open room back up
+            sem_post(&mutex); //composer has left
 
         }
     }
